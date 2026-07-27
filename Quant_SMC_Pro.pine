@@ -307,13 +307,130 @@ drawLabel(
 
 //==================================================================================================
 // END PART 1
-//
-// Next:
-//
-// Trend Engine
-// EMA Engine
-// ATR Engine
-// Higher Timeframe Engine
-//
-// Approximately 180 lines
+//==================================================================================================
+// TREND ENGINE
+//==================================================================================================
+
+// Core calculations
+
+emaFast = ta.ema(close, emaFastLength)
+emaSlow = ta.ema(close, emaSlowLength)
+
+atr = ta.atr(atrLength)
+
+htfEMA =
+    useHigherTF ?
+    request.security(
+        syminfo.tickerid,
+        higherTF,
+        ta.ema(close, emaSlowLength),
+        lookahead = barmerge.lookahead_off
+    ) :
+    na
+
+//--------------------------------------------------------------------------------------------------
+// Trend Detection
+//--------------------------------------------------------------------------------------------------
+
+bullEMA = emaFast > emaSlow
+bearEMA = emaFast < emaSlow
+
+bullHTF =
+    not useHigherTF ?
+    true :
+    close > htfEMA
+
+bearHTF =
+    not useHigherTF ?
+    true :
+    close < htfEMA
+
+trendLong =
+    bullEMA and bullHTF
+
+trendShort =
+    bearEMA and bearHTF
+
+currentTrend :=
+    trendLong ?
+    TREND_BULL :
+    trendShort ?
+    TREND_BEAR :
+    TREND_NONE
+
+//--------------------------------------------------------------------------------------------------
+// Trend Helper Functions
+//--------------------------------------------------------------------------------------------------
+
+isBullTrend() =>
+    currentTrend == TREND_BULL
+
+isBearTrend() =>
+    currentTrend == TREND_BEAR
+
+isNeutralTrend() =>
+    currentTrend == TREND_NONE
+
+//--------------------------------------------------------------------------------------------------
+// Trend Strength
+//--------------------------------------------------------------------------------------------------
+
+emaDistance =
+    math.abs(emaFast - emaSlow)
+
+trendStrength =
+    emaDistance / atr
+
+//--------------------------------------------------------------------------------------------------
+// Plot EMA
+//--------------------------------------------------------------------------------------------------
+
+plot(
+    showEMA ? emaFast : na,
+    title="EMA Fast",
+    linewidth=2,
+    color=color.orange)
+
+plot(
+    showEMA ? emaSlow : na,
+    title="EMA Slow",
+    linewidth=2,
+    color=color.blue)
+
+//--------------------------------------------------------------------------------------------------
+// Background
+//--------------------------------------------------------------------------------------------------
+
+bgcolor(
+    currentTrend == TREND_BULL ?
+    color.new(color.green,92) :
+    currentTrend == TREND_BEAR ?
+    color.new(color.red,92) :
+    na)
+
+//--------------------------------------------------------------------------------------------------
+// Debug
+//--------------------------------------------------------------------------------------------------
+
+plot(
+    debugMode ?
+    trendStrength :
+    na,
+    title="Trend Strength",
+    color=color.white)
+
+//==================================================================================================
+// ATR FUNCTIONS
+//==================================================================================================
+
+getLongATRStop(float entry)=>
+
+    entry-(atr*atrMultiplier)
+
+getShortATRStop(float entry)=>
+
+    entry+(atr*atrMultiplier)
+
+//==================================================================================================
+// END TREND ENGINE
 //==================================================================================================
