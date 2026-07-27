@@ -405,13 +405,13 @@ currentTrend :=
 // Trend Helper Functions
 //--------------------------------------------------------------------------------------------------
 
-isBullTrend() =>
+trendLong() =>
     currentTrend == TREND_BULL
 
-isBearTrend() =>
+trendShort() =>
     currentTrend == TREND_BEAR
 
-isNeutralTrend() =>
+currentTrend() =>
     currentTrend == TREND_NONE
 
 //--------------------------------------------------------------------------------------------------
@@ -476,4 +476,161 @@ getShortATRStop(float entry)=>
 
 //==================================================================================================
 // END TREND ENGINE
+//==================================================================================================
+//==================================================================================================
+// SWING ENGINE
+//==================================================================================================
+
+// Confirmed pivots
+pivotHigh = ta.pivothigh(high, pivotLength, pivotLength)
+pivotLow  = ta.pivotlow(low, pivotLength, pivotLength)
+
+// Current confirmed swings
+var float confirmedHigh = na
+var float confirmedLow  = na
+
+var int confirmedHighBar = na
+var int confirmedLowBar  = na
+
+// Previous confirmed swings
+var float previousHigh = na
+var float previousLow  = na
+
+// Structure types
+var int lastHighStructure = STRUCTURE_NONE
+var int lastLowStructure  = STRUCTURE_NONE
+
+//--------------------------------------------------------------------------------------------------
+// Detect High Pivot
+//--------------------------------------------------------------------------------------------------
+
+if not na(pivotHigh)
+
+    previousHigh := confirmedHigh
+
+    confirmedHigh := pivotHigh
+
+    confirmedHighBar := bar_index - pivotLength
+
+    if not na(previousHigh)
+
+        lastHighStructure :=
+            confirmedHigh > previousHigh ?
+            STRUCTURE_HH :
+            STRUCTURE_LH
+
+addSwing(
+    confirmedHigh,
+    confirmedHighBar,
+    true,
+    lastHighStructure)
+
+//--------------------------------------------------------------------------------------------------
+// Detect Low Pivot
+//--------------------------------------------------------------------------------------------------
+
+if not na(pivotLow)
+
+    previousLow := confirmedLow
+
+    confirmedLow := pivotLow
+
+    confirmedLowBar := bar_index - pivotLength
+
+    if not na(previousLow)
+
+        lastLowStructure :=
+            confirmedLow > previousLow ?
+            STRUCTURE_HL :
+            STRUCTURE_LL
+
+addSwing(
+    confirmedLow,
+    confirmedLowBar,
+    false,
+    lastLowStructure)
+
+//--------------------------------------------------------------------------------------------------
+// Draw Swing Labels
+//--------------------------------------------------------------------------------------------------
+
+if showLabels and not na(pivotHigh)
+
+    txt =
+        lastHighStructure == STRUCTURE_HH ?
+        "HH" :
+        "LH"
+
+drawSwingLabel(
+    confirmedHighBar,
+    confirmedHigh,
+    txt,
+    true)
+
+if showLabels and not na(pivotLow)
+
+    txt =
+        lastLowStructure == STRUCTURE_HL ?
+        "HL" :
+        "LL"
+
+drawSwingLabel(
+    confirmedLowBar,
+    confirmedLow,
+    txt,
+    false)
+//==================================================================================================
+// DRAWING HELPERS
+//==================================================================================================
+
+drawSwingLabel(
+    int bar,
+    float price,
+    string text,
+    bool high)=>
+
+    label.new(
+        x = bar,
+        y = price,
+        text = text,
+        style = high ? label.style_label_down : label.style_label_up,
+        color = high ? bearColor : bullColor,
+        textcolor = color.white,
+        size = size.tiny)
+//--------------------------------------------------------------------------------------------------
+// Plot Swing Markers
+//--------------------------------------------------------------------------------------------------
+
+plotshape(
+     showSwings and not na(pivotHigh),
+     style=shape.triangledown,
+     location=location.abovebar,
+     color=bearColor,
+     size=size.tiny)
+
+plotshape(
+     showSwings and not na(pivotLow),
+     style=shape.triangleup,
+     location=location.belowbar,
+     color=bullColor,
+     size=size.tiny)
+
+//--------------------------------------------------------------------------------------------------
+// Debug Information
+//--------------------------------------------------------------------------------------------------
+
+plotchar(
+     debugMode ? confirmedHigh : na,
+     title="Confirmed High",
+     char="H",
+     location=location.top)
+
+plotchar(
+     debugMode ? confirmedLow : na,
+     title="Confirmed Low",
+     char="L",
+     location=location.bottom)
+
+//==================================================================================================
+// END SWING ENGINE
 //==================================================================================================
