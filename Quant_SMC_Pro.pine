@@ -241,18 +241,29 @@ var int lastSwingLowBar = na
 var int currentTrend = TREND_NONE
 
 //==================================================================================================
-// ARRAYS
+// OBJECT STORAGE
 //==================================================================================================
 
-var swingPrice =
-    array.new_float()
+var swings = array.new<Swing>()
 
-var swingBar =
-    array.new_int()
+var structures = array.new<StructureEvent>()
+//==================================================================================================
+// CUSTOM TYPES
+//==================================================================================================
 
-var swingType =
-    array.new_int()
+// Confirmed market swing
+type Swing
+    float price
+    int   bar
+    bool  isHigh
+    int   structure
 
+// Structure event (BOS / CHoCH later)
+type StructureEvent
+    float level
+    int   bar
+    bool  bullish
+    string name
 //==================================================================================================
 // UTILITY FUNCTIONS
 //==================================================================================================
@@ -304,7 +315,39 @@ drawLabel(
              label.style_label_up:
              label.style_label_down,
          size=size.tiny)
+//==================================================================================================
+// SWING HELPERS
+//==================================================================================================
 
+// Save a swing
+addSwing(float price, int bar, bool isHigh, int structure)=>
+
+    Swing s = Swing.new(
+        price,
+        bar,
+        isHigh,
+        structure)
+
+    array.push(swings, s)
+
+// Number of swings
+swingCount()=>
+
+    array.size(swings)
+
+// Last swing
+lastSwing()=>
+
+    swingCount() > 0 ?
+    array.get(swings, swingCount()-1) :
+    na
+
+// Previous swing
+previousSwing()=>
+
+    swingCount() > 1 ?
+    array.get(swings, swingCount()-2) :
+    na
 //==================================================================================================
 // END PART 1
 //==================================================================================================
