@@ -1,1 +1,319 @@
+//@version=6
 
+//==================================================================================================
+// Quant SMC Pro
+// Version : 0.1.0
+//
+// Institutional Smart Money Strategy
+//
+// Author : ChatGPT
+//
+// This project is intentionally modular.
+// Every engine is isolated so future versions can easily add:
+//
+// • Order Blocks
+// • Fair Value Gaps
+// • Liquidity
+// • Premium / Discount
+// • Dashboard
+// • Statistics
+//
+//==================================================================================================
+
+strategy(
+     title="Quant SMC Pro",
+     shorttitle="QSMC",
+     overlay=true,
+     initial_capital=10000,
+     pyramiding=0,
+     commission_type=strategy.commission.percent,
+     commission_value=0.05,
+     process_orders_on_close=true,
+     calc_on_every_tick=false,
+     max_labels_count=500,
+     max_lines_count=500)
+
+//==================================================================================================
+// VERSION
+//==================================================================================================
+
+VERSION = "0.1.0"
+
+//==================================================================================================
+// INPUT GROUPS
+//==================================================================================================
+
+GROUP_TREND = "Trend"
+
+GROUP_SWING = "Swing Detection"
+
+GROUP_RISK = "Risk"
+
+GROUP_VISUAL = "Visual"
+
+GROUP_ALERT = "Alerts"
+
+GROUP_DEBUG = "Debug"
+
+//==================================================================================================
+// TREND INPUTS
+//==================================================================================================
+
+useEMAFilter =
+    input.bool(
+         true,
+         "Enable EMA Filter",
+         group=GROUP_TREND)
+
+emaFastLength =
+    input.int(
+         50,
+         "Fast EMA",
+         minval=1,
+         group=GROUP_TREND)
+
+emaSlowLength =
+    input.int(
+         200,
+         "Slow EMA",
+         minval=1,
+         group=GROUP_TREND)
+
+useHigherTF =
+    input.bool(
+         false,
+         "Enable Higher Timeframe Filter",
+         group=GROUP_TREND)
+
+higherTF =
+    input.timeframe(
+         "240",
+         "Higher Timeframe",
+         group=GROUP_TREND)
+
+//==================================================================================================
+// SWING
+//==================================================================================================
+
+pivotLength =
+    input.int(
+         5,
+         "Pivot Length",
+         minval=2,
+         maxval=20,
+         group=GROUP_SWING)
+
+minimumSwingTicks =
+    input.int(
+         20,
+         "Minimum Swing Size",
+         minval=1,
+         group=GROUP_SWING)
+
+//==================================================================================================
+// RISK
+//==================================================================================================
+
+stopMode =
+    input.string(
+         "ATR",
+         "Stop Loss",
+         options=[
+             "ATR",
+             "Swing",
+             "Percent"
+         ],
+         group=GROUP_RISK)
+
+riskReward =
+    input.float(
+         3.0,
+         "Risk Reward",
+         step=.5,
+         group=GROUP_RISK)
+
+riskPercent =
+    input.float(
+         1.0,
+         "Risk %",
+         step=.25,
+         group=GROUP_RISK)
+
+atrLength =
+    input.int(
+         14,
+         "ATR Length",
+         group=GROUP_RISK)
+
+atrMultiplier =
+    input.float(
+         2.0,
+         "ATR Multiplier",
+         step=.25,
+         group=GROUP_RISK)
+
+//==================================================================================================
+// VISUAL
+//==================================================================================================
+
+showEMA =
+    input.bool(
+         true,
+         "Show EMA",
+         group=GROUP_VISUAL)
+
+showSwings =
+    input.bool(
+         true,
+         "Show Swings",
+         group=GROUP_VISUAL)
+
+showLabels =
+    input.bool(
+         true,
+         "Show Labels",
+         group=GROUP_VISUAL)
+
+bullColor =
+    input.color(
+         color.lime,
+         "Bullish Color",
+         group=GROUP_VISUAL)
+
+bearColor =
+    input.color(
+         color.red,
+         "Bearish Color",
+         group=GROUP_VISUAL)
+
+//==================================================================================================
+// ALERTS
+//==================================================================================================
+
+enableAlerts =
+    input.bool(
+         true,
+         "Enable Alerts",
+         group=GROUP_ALERT)
+
+//==================================================================================================
+// DEBUG
+//==================================================================================================
+
+debugMode =
+    input.bool(
+         false,
+         "Debug Mode",
+         group=GROUP_DEBUG)
+
+//==================================================================================================
+// ENUMS
+//==================================================================================================
+
+TREND_BULL = 1
+
+TREND_BEAR = -1
+
+TREND_NONE = 0
+
+STRUCTURE_NONE = 0
+
+STRUCTURE_HH = 1
+
+STRUCTURE_HL = 2
+
+STRUCTURE_LH = 3
+
+STRUCTURE_LL = 4
+
+//==================================================================================================
+// VARIABLES
+//==================================================================================================
+
+var float lastSwingHigh = na
+
+var float lastSwingLow = na
+
+var int lastSwingHighBar = na
+
+var int lastSwingLowBar = na
+
+var int currentTrend = TREND_NONE
+
+//==================================================================================================
+// ARRAYS
+//==================================================================================================
+
+var swingPrice =
+    array.new_float()
+
+var swingBar =
+    array.new_int()
+
+var swingType =
+    array.new_int()
+
+//==================================================================================================
+// UTILITY FUNCTIONS
+//==================================================================================================
+
+// Round to Tick
+
+roundTick(float value)=>
+
+    math.round(value/syminfo.mintick)*syminfo.mintick
+
+// ATR
+
+getATR()=>
+
+    ta.atr(atrLength)
+
+// Distance
+
+distance(float a,float b)=>
+
+    math.abs(a-b)
+
+// Higher TF EMA
+
+getHTFEMA(int len)=>
+
+    request.security(
+         syminfo.tickerid,
+         higherTF,
+         ta.ema(close,len))
+
+// Label Helper
+
+drawLabel(
+     int x,
+     float y,
+     string txt,
+     color c,
+     bool up)=>
+
+    label.new(
+         x=x,
+         y=y,
+         text=txt,
+         color=c,
+         textcolor=color.white,
+         style=
+             up?
+             label.style_label_up:
+             label.style_label_down,
+         size=size.tiny)
+
+//==================================================================================================
+// END PART 1
+//
+// Next:
+//
+// Trend Engine
+// EMA Engine
+// ATR Engine
+// Higher Timeframe Engine
+//
+// Approximately 180 lines
+//==================================================================================================
